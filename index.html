@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      src="https://unpkg.com/react@16/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https:\//unpkg.com/react-dom@16/umd/react-dom.development.js"
+      crossorigin
+    ></script>
+    <script src="https:\//unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <title>Kurs Reacta - tydzień 2</title>
+  </head>
+
+  <body class="bg-slate-500 px-2 text-xl text-zinc-900 sm:px-5">
+    <div id="root"></div>
+  </body>
+  <script type="text/babel">
+    const rootElement = document.querySelector("#root");
+
+    class App extends React.Component {
+      render() {
+        return (
+          <>
+            <h1 className="mt-5 text-center text-3xl font-bold">
+              Kurs Reacta - tydzień 2
+            </h1>
+            <TimerEditor />
+            <Timer title="Uczę się stylowania" durationInMinutes={1} />
+          </>
+        );
+      }
+    }
+
+    class TimerEditor extends React.Component {
+      render() {
+        return (
+          <div className="mx-auto mt-10 flex max-w-md flex-wrap justify-start space-y-4 rounded-md border bg-zinc-200 p-4 shadow-md">
+            <div className="flex basis-full flex-wrap gap-3">
+              <label
+                className="font-semibold sm:basis-24"
+                htmlFor="description"
+              >
+                Co robisz?
+              </label>
+              <input
+                className="grow rounded-sm border border-zinc-700 bg-slate-400 focus:outline-none focus:ring-2 focus:ring-zinc-800"
+                type="text"
+                name="description"
+                id="description"
+              />
+            </div>
+
+            <div className="flex basis-full flex-wrap gap-3">
+              <label className="basis-24 font-semibold" htmlFor="time">
+                Ile minut?
+              </label>
+              <input
+                className="grow rounded-sm border border-zinc-700 bg-slate-400 focus:outline-none focus:ring-2 focus:ring-zinc-800"
+                type="text"
+                name="time"
+                id="time"
+              />
+            </div>
+          </div>
+        );
+      }
+    }
+
+    class Timer extends React.Component {
+      constructor(props) {
+        super(props);
+
+        this.startTimer = this.startTimer.bind(this);
+        this.stopTimer = this.stopTimer.bind(this);
+        this.resetTimer = this.resetTimer.bind(this);
+        this.incrementTime = this.incrementTime.bind(this);
+
+        this.STATUSES = { PAUSED: "paused", RUNNING: "running" };
+
+        this.state = {
+          status: this.STATUSES.PAUSED,
+          numberOfPauses: 0,
+          secondsElapsed: 0,
+        };
+      }
+
+      startTimer() {
+        this.setState({ status: this.STATUSES.RUNNING });
+        this.intervalId = setInterval(this.incrementTime, 100);
+      }
+
+      stopTimer() {
+        const nextState = {
+          status: this.STATUSES.PAUSED,
+          numberOfPauses: this.state.numberOfPauses + 1,
+        };
+
+        this.setState(nextState);
+        clearInterval(this.intervalId);
+      }
+
+      resetTimer() {
+        const nextState = {
+          status: this.STATUSES.PAUSED,
+          secondsElapsed: 0,
+          numberOfPauses: 0,
+        };
+        this.setState(nextState);
+        clearInterval(this.intervalId);
+      }
+
+      incrementTime() {
+        const { secondsElapsed } = this.state;
+        const { durationInMinutes } = this.props;
+
+        if (secondsElapsed >= durationInMinutes * 60) {
+          const nextState = {
+            status: this.STATUSES.PAUSED,
+            secondsElapsed: 0,
+            numberOfPauses: 0,
+          };
+          this.setState(nextState);
+          clearInterval(this.intervalId);
+          return;
+        }
+
+        this.setState((prevState) => ({
+          secondsElapsed: prevState.secondsElapsed + 0.1,
+        }));
+      }
+
+      formatTime(durationInSeconds) {
+        // example input: 175
+        const hours = Math.floor(durationInSeconds / 3600);
+        const minutes = Math.floor((durationInSeconds % 3600) / 60);
+        const seconds = Math.floor(durationInSeconds % 60);
+
+        const hoursFormatted = hours.toString(10).padStart(2, "0");
+        const minutesFormatted = minutes.toString(10).padStart(2, "0");
+        const secondsFormatted = seconds.toString(10).padStart(2, "0");
+
+        // example output: 02:55:00
+        return `${hoursFormatted}:${minutesFormatted}:${secondsFormatted}`;
+      }
+
+      render() {
+        const { title, durationInMinutes } = this.props;
+        const { status, secondsElapsed, numberOfPauses } = this.state;
+
+        const secondsRemaining = durationInMinutes * 60 - secondsElapsed;
+        const timeRemainingFormatted = this.formatTime(secondsRemaining);
+        const progressRemaining =
+          100 - (secondsElapsed / (durationInMinutes * 60)) * 100;
+
+        return (
+          <div className="mx-auto mt-10 flex max-w-md flex-wrap justify-center space-y-4 rounded-md border bg-zinc-200 p-4 text-center shadow-md">
+            <h2 className="basis-full font-bold">{title}</h2>
+            <p className="basis-full font-semibold">
+              Pozostało{" "}
+              {secondsRemaining > 0 ? timeRemainingFormatted : "00:00:00"}
+            </p>
+
+            <ProgressBar progressRemaining={progressRemaining} />
+
+            <div className="flex basis-full items-center justify-center gap-4">
+              <Button
+                name="start"
+                onButtonClick={this.startTimer}
+                active={status === this.STATUSES.PAUSED}
+              />
+              <Button
+                name="stop"
+                onButtonClick={this.stopTimer}
+                active={status === this.STATUSES.RUNNING}
+              />
+              <Button name="reset" onButtonClick={this.resetTimer} />
+              <p className="min-w-[155px] font-semibold">
+                liczba przerw: {numberOfPauses}
+              </p>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    class ProgressBar extends React.Component {
+      constructor(props) {
+        super(props);
+      }
+      render() {
+        const { progressRemaining } = this.props;
+        return (
+          <div
+            className={`relative h-6 w-72 ring ring-orange-500 ring-offset-2 after:absolute after:inset-0 after:w-[${progressRemaining}%] after:bg-orange-300`}
+          ></div>
+        );
+      }
+    }
+
+    class Button extends React.Component {
+      static defaultProps = {
+        active: true,
+      };
+
+      constructor(props) {
+        super(props);
+      }
+
+      render() {
+        const { name, onButtonClick, active } = this.props;
+
+        return (
+          <button
+            disabled={!active}
+            className="rounded bg-orange-600 px-3 text-lg font-medium text-zinc-50 transition duration-300 ease-in-out hover:border-slate-900 hover:bg-orange-700 active:bg-orange-900 active:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600"
+            onClick={onButtonClick}
+          >
+            {name}
+          </button>
+        );
+      }
+    }
+
+    ReactDOM.render(<App />, rootElement);
+  </script>
+</html>
